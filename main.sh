@@ -7,57 +7,74 @@ TODO_FILE="$HOME/todo.txt"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Function to display the menu
 show_menu() {
-  echo -e "${YELLOW}1) View To-Do List${NC}"
-  echo -e "${YELLOW}2) Add Task${NC}"
-  echo -e "${YELLOW}3) Remove Task${NC}"
-  echo -e "${YELLOW}4) Mark Task as Done${NC}"
-  echo -e "${YELLOW}5) Undo Mark as Done${NC}"
-  echo -e "${YELLOW}6) Sort Tasks by Priority${NC}"
-  echo -e "${YELLOW}7) Search Tasks${NC}"
-  echo -e "${YELLOW}8) Show Statistics and Insights${NC}"
-  echo -e "${YELLOW}9) Filter Tasks by Tag${NC}"
-  echo -e "${YELLOW}10) Exit${NC}"
+  echo -e "${BLUE}1) View To-Do List${NC}"
+  echo -e "${BLUE}2) Add Task${NC}"
+  echo -e "${BLUE}3) Remove Task${NC}"
+  echo -e "${BLUE}4) Mark Task as Done${NC}"
+  echo -e "${BLUE}5) Undo Mark as Done${NC}"
+  echo -e "${BLUE}6) Sort Tasks by Priority${NC}"
+  echo -e "${BLUE}7) Search Tasks${NC}"
+  echo -e "${BLUE}8) Show Statistics and Insights${NC}"
+  echo -e "${BLUE}9) Filter Tasks by Tag${NC}"
+  echo -e "${BLUE}10) Export Tasks(press e) ${NC}"
+  echo -e "${BLUE}11) Import Tasks (press i) ${NC}"
+  echo -e "${BLUE}12) Exit (press x) ${NC}"
+  echo -e "${GREEN}Press the corresponding number to choose an option.${NC}"
 }
 
-# Function to view tasks
+# Function to color-code tasks based on priority
 view_tasks() {
   if [ -f "$TODO_FILE" ]; then
     echo -e "${GREEN}Your To-Do List:${NC}"
-    nl -w 2 -s ". " "$TODO_FILE"
+    while read -r line; do
+      if [[ "$line" == *"[High]"* ]]; then
+        echo -e "${RED}$line${NC}"
+      elif [[ "$line" == *"[Medium]"* ]]; then
+        echo -e "${YELLOW}$line${NC}"
+      else
+        echo -e "${GREEN}$line${NC}"
+      fi
+    done < "$TODO_FILE"
   else
     echo -e "${RED}No tasks yet!${NC}"
   fi
 }
 
-# Function to add a task with a reminder and tags
+# Function to add a task
 add_task() {
   if [ ! -f "$TODO_FILE" ]; then
     touch "$TODO_FILE"
   fi
   echo -n "Enter a new task: "
   read task
-  echo -n "Set priority (Low, Medium, High): "
-  read priority
+
+  echo -e "${YELLOW}Set priority:${NC}"
+  echo -e "${GREEN}1) Low${NC}"
+  echo -e "${YELLOW}2) Medium${NC}"
+  echo -e "${RED}3) High${NC}"
+  echo -n "Choose priority (press 1, 2, or 3): "
+  read -n 1 -s priority_choice
+  echo
+
+  case $priority_choice in
+    1) priority="Low" ;;
+    2) priority="Medium" ;;
+    3) priority="High" ;;
+    *) echo -e "${RED}Invalid choice! Defaulting to 'Low'.${NC}"; priority="Low" ;;
+  esac
+
   echo -n "Set deadline (YYYY-MM-DD): "
   read deadline
-  echo -n "Set reminder (HH:MM, 24-hour format, leave empty if not needed): "
-  read reminder_time
   echo -n "Enter tags for the task (e.g., work, personal): "
   read tags
 
-  # Save the task in the todo file
   echo "[$priority] $task - Due: $deadline #$tags" >> "$TODO_FILE"
-  echo -e "${GREEN}Task added with priority, deadline, and tags!${NC}"
-
-  # Schedule reminder if time is provided
-  if [ -n "$reminder_time" ]; then
-    echo "notify-send 'Reminder: $task'" | at $reminder_time
-    echo -e "${GREEN}Reminder set for $reminder_time!${NC}"
-  fi
+  echo -e "${GREEN}Task added!${NC}"
 }
 
 # Function to remove a task
@@ -86,19 +103,6 @@ mark_done() {
   fi
 }
 
-# Function to undo marking a task as done
-undo_done() {
-  if [ -f "$TODO_FILE" ]; then
-    view_tasks
-    echo -n "Enter task number to undo: "
-    read task_number
-    sed -i "${task_number}s/^\[DONE\] //" "$TODO_FILE"
-    echo -e "${GREEN}Task status undone!${NC}"
-  else
-    echo -e "${RED}No tasks to undo!${NC}"
-  fi
-}
-
 # Function to sort tasks by priority
 sort_tasks() {
   if [ -f "$TODO_FILE" ]; then
@@ -111,14 +115,14 @@ sort_tasks() {
   fi
 }
 
-# Function to search tasks
-search_tasks() {
-  echo -n "Enter a keyword to search: "
-  read keyword
-  grep -i "$keyword" "$TODO_FILE" || echo -e "${RED}No tasks found with keyword: $keyword${NC}"
+# Function to export tasks
+export_tasks() {
+  echo -n "Enter export file name: "
+  read export_file
+  cp "$TODO_FILE" "$export_file"
+  echo -e "${GREEN}Tasks exported to $export_file.${NC}"
 }
 
-# Function to show statistics and insights
 show_stats() {
   if [ -f "$TODO_FILE" ]; then
     total_tasks=$(wc -l < "$TODO_FILE")
@@ -140,7 +144,6 @@ show_stats() {
   fi
 }
 
-# Function to filter tasks by tag
 filter_by_tag() {
   if [ -f "$TODO_FILE" ]; then
     echo -n "Enter tag to filter: "
@@ -151,11 +154,23 @@ filter_by_tag() {
   fi
 }
 
+# Function to import tasks
+import_tasks() {
+  echo -n "Enter file name to import tasks from: "
+  read import_file
+  if [ -f "$import_file" ]; then
+    cat "$import_file" >> "$TODO_FILE"
+    echo -e "${GREEN}Tasks imported from $import_file.${NC}"
+  else
+    echo -e "${RED}File not found!${NC}"
+  fi
+}
+
 # Main loop
 while true; do
   show_menu
-  echo -n "Choose an option: "
-  read choice
+  read -n 1 -s choice
+  echo
   case $choice in
     1) view_tasks ;;
     2) add_task ;;
@@ -166,7 +181,9 @@ while true; do
     7) search_tasks ;;
     8) show_stats ;;
     9) filter_by_tag ;;
-    10) echo -e "${GREEN}Goodbye!${NC}"; exit ;;
+    'e') export_tasks ;;
+    'i') import_tasks ;;
+    'x') echo -e "${GREEN}Goodbye!${NC}"; exit ;;
     *) echo -e "${RED}Invalid option! Please try again.${NC}" ;;
   esac
 done
