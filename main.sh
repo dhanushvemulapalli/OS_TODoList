@@ -45,6 +45,16 @@ view_tasks() {
   fi
 }
 
+search_tasks() {
+  if [ -f "$TODO_FILE" ]; then
+    echo -n "Enter keyword to search: "
+    read keyword
+    grep -i "$keyword" "$TODO_FILE" || echo -e "${RED}No tasks found matching: $keyword${NC}"
+  else
+    echo -e "${RED}No tasks available to search!${NC}"
+  fi
+}
+
 # Function to add a task
 add_task() {
   if [ ! -f "$TODO_FILE" ]; then
