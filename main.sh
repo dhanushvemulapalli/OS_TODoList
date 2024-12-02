@@ -103,6 +103,19 @@ mark_done() {
   fi
 }
 
+# Function to undo a task as done
+undo_done() {
+  if [ -f "$TODO_FILE" ]; then
+    view_tasks
+    echo -n "Enter task number to undo mark as done: "
+    read task_number
+    sed -i "${task_number}s/^\[DONE\] //" "$TODO_FILE"
+    echo -e "${GREEN}Mark undone!${NC}"
+  else
+    echo -e "${RED}No tasks to undo!${NC}"
+  fi
+}
+
 # Function to sort tasks by priority
 sort_tasks() {
   if [ -f "$TODO_FILE" ]; then
